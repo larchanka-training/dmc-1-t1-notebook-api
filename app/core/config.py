@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     log_level_file: str = "INFO"
     log_file: Path = Path("logs/app.log")
     log_retention_days: int = 14
+    enable_file_logging: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

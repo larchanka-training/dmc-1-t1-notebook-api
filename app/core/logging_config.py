@@ -92,7 +92,9 @@ def setup_logging(console_output: bool = True) -> None:
     log_file = settings.log_file
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    handlers = ["file"]
+    handlers = []
+    if settings.enable_file_logging:
+        handlers.append("file")
     if console_output:
         handlers.append("console")
 

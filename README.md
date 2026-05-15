@@ -5,7 +5,8 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 ## What is included
 
 - FastAPI app with versioned API routing
-- Health check endpoint
+- Health check endpoint with detailed service information
+- Structured JSON logging system with trace context
 - Environment-based configuration with Pydantic Settings
 - Basic test setup with Pytest
 - Clear folder structure for future growth
@@ -21,8 +22,13 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 │   │       │   └── health.py
 │   │       └── router.py
 │   ├── core
-│   │   └── config.py
+│   │   ├── config.py
+│   │   └── logging_config.py
+│   ├── utils
+│   │   └── tracing.py
 │   └── main.py
+├── logs
+│   └── app.log
 ├── tests
 │   └── test_health.py
 ├── .env.example
@@ -74,4 +80,50 @@ pytest
 - Include endpoint routers inside `app/api/v1/router.py`
 - Add business logic/services in new modules (for example: `app/services/`)
 - Add database layer later (`app/db/`) when needed
+
+## Logging
+
+The application uses structured JSON logging with trace context:
+
+- **Log format**: JSON with fields `timestamp`, `level`, `service`, `name`, `message`, `trace_id`, `user_id`
+- **Log levels**: Configurable via environment variables (`LOG_LEVEL`, `LOG_LEVEL_CONSOLE`, `LOG_LEVEL_FILE`)
+- **Log rotation**: Daily rotation at midnight with ~14-day retention (~2 weeks)
+- **Trace context**: Each log entry includes a `trace_id` for request tracking
+
+### Using the logger
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.info("User action completed", extra={"user_id": 123})
+logger.error("Something went wrong", exc_info=True)
+```
+
+### Configuration
+
+Add to your `.env` file:
+
+```env
+LOG_LEVEL=DEBUG
+LOG_LEVEL_CONSOLE=DEBUG
+LOG_LEVEL_FILE=INFO
+LOG_FILE=logs/app.log
+```
+
+## Health Check
+
+The health check endpoint is available at `/api/v1/health` and returns:
+
+```json
+{
+  "status": "healthy",
+  "service": "MSD FastAPI Template",
+  "environment": "dev",
+  "api_version": "v1"
+}
+```
+
+This endpoint can be used by load balancers, orchestrators, or monitoring systems to verify service availability.
 

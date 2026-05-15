@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     token_ttl_seconds: int = 86400
     session_ttl_seconds: int = 604800
 
+    # OpenTelemetry settings
+    otel_enabled: bool = False
+    otel_endpoint: str = "http://localhost:4317"
+    otel_service_name: str = "dmc-1-t1-notebook-api"
+
     # Logging settings
     log_level: str = "DEBUG"
     log_level_console: str = "DEBUG"

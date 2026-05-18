@@ -4,8 +4,22 @@ on:
   push:
     branches: [main, develop]
     tags: ['v*']
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+      - 'Dockerfile'
+      - '.github/workflows/**'
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 env:
   REGISTRY: ghcr.io

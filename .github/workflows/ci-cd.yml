@@ -13,21 +13,38 @@ on:
       - '.github/workflows/**'
   pull_request:
     branches: [main, develop]
-    paths:
-      - 'app/**'
-      - 'tests/**'
-      - 'requirements.txt'
-      - 'requirements-dev.txt'
-      - 'Dockerfile'
-      - '.github/workflows/**'
+    # paths фильтр убран — workflow всегда запускается на PR,
+    # чтобы Required checks всегда отчитывались о результате.
+    # Фильтрация кода vs документации выполняется внутри через job changes.
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/dmc-1-t1-notebook-api
 
 jobs:
+  changes:
+    name: Определить изменения
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'app/**'
+              - 'tests/**'
+              - 'requirements.txt'
+              - 'requirements-dev.txt'
+              - 'Dockerfile'
+              - '.github/workflows/**'
+
   lint:
     name: Lint (ruff)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -43,6 +60,8 @@ jobs:
 
   test:
     name: Test (pytest)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -59,7 +78,8 @@ jobs:
   build:
     name: Build & Push Docker image
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [changes, lint, test]
+    if: needs.changes.outputs.code == 'true'
     permissions:
       contents: read
       packages: write

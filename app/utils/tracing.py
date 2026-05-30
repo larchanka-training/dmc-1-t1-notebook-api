@@ -11,6 +11,8 @@ import uuid
 from contextvars import ContextVar, Token
 from typing import Any
 
+from opentelemetry import trace as otel_trace
+
 trace_id_var: ContextVar[str | None] = ContextVar("trace_id", default=None)
 user_id_var: ContextVar[Any] = ContextVar("user_id", default=None)
 
@@ -29,7 +31,11 @@ def bind_trace_id(value: str | None) -> Token[str | None]:
 
 
 def get_trace_id() -> str | None:
-    """Получить текущий `trace_id` из контекста (или `None`)."""
+    """Return trace_id: active OTel span trace ID if valid, else trace_id_var, else None."""
+    span = otel_trace.get_current_span()
+    ctx = span.get_span_context()
+    if ctx.is_valid:
+        return format(ctx.trace_id, "032x")
     return trace_id_var.get()
 
 

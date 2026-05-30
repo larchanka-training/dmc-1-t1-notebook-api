@@ -115,18 +115,52 @@ target_metadata = Base.metadata
 
 ---
 
-## Шаг 5 — Создать и применить миграцию
+## Шаг 5 — Создать миграцию и применить локально
 
 ```bash
 alembic revision --autogenerate -m "add <resource> table"
+```
+
+Просмотреть сгенерированный файл в `alembic/versions/` и убедиться что он корректен.
+
+Применить к **локальной** БД:
+
+```bash
 alembic upgrade head
 ```
 
-Проверить что миграция корректна перед применением — просмотреть сгенерированный файл в `alembic/versions/`.
+> **Важно:** `alembic upgrade head` вручную запускается **только локально**.
+> Dev и prod RDS находятся в приватных подсетях AWS — прямое подключение
+> с ноутбука к ним невозможно. Миграции на AWS применяются автоматически
+> при старте контейнера (см. следующий шаг).
 
 ---
 
-## Шаг 6 — Использовать в endpoint
+## Шаг 6 — Обновить Dockerfile для автоматических миграций на AWS
+
+RDS в dev и prod окружениях недоступен напрямую (приватная подсеть, нет VPN/bastion).
+Миграции применяются автоматически: при каждом деплое ECS запускает новый контейнер,
+который сначала выполняет `alembic upgrade head`, затем стартует сервер.
+
+Обновить `CMD` в `Dockerfile`:
+
+```dockerfile
+# Было:
+CMD ["fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
+
+# Стало:
+CMD ["sh", "-c", "alembic upgrade head && fastapi run app/main.py --host 0.0.0.0 --port 8000"]
+```
+
+`DATABASE_URL` уже инжектируется из AWS Secrets Manager в ECS task definition —
+Alembic получает его автоматически через `settings.database_url`.
+
+Alembic использует блокировку на уровне БД, поэтому одновременный запуск двух
+контейнеров во время rolling update безопасен — второй просто дождётся первого.
+
+---
+
+## Шаг 7 — Использовать в endpoint
 
 ```python
 from fastapi import APIRouter, Depends
@@ -142,7 +176,7 @@ async def list_resources(db: AsyncSession = Depends(get_db)):
 
 ---
 
-## Шаг 7 — Написать тест
+## Шаг 8 — Написать тест
 
 ```python
 import pytest

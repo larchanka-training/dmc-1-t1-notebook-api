@@ -31,12 +31,10 @@ def setup_telemetry() -> None:
     )
     trace.set_tracer_provider(tracer_provider)
 
-    # --- Логи ---
-    logger_provider = LoggerProvider(resource=resource)
-    logger_provider.add_log_record_processor(
-        BatchLogRecordProcessor(OTLPLogExporter(endpoint=settings.otel_endpoint))
-    )
-    set_logger_provider(logger_provider)
-
-    # Мост: Python logging → OTel (все logger.info/error/... идут в Aspire)
-    logging.getLogger().addHandler(LoggingHandler(logger_provider=logger_provider))
+    if settings.otel_logs_enabled:
+        logger_provider = LoggerProvider(resource=resource)
+        logger_provider.add_log_record_processor(
+            BatchLogRecordProcessor(OTLPLogExporter(endpoint=settings.otel_endpoint))
+        )
+        set_logger_provider(logger_provider)
+        logging.getLogger().addHandler(LoggingHandler(logger_provider=logger_provider))

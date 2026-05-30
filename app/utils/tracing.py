@@ -31,7 +31,7 @@ def bind_trace_id(value: str | None) -> Token[str | None]:
 
 
 def get_trace_id() -> str | None:
-    """Return trace_id: active OTel span trace ID if valid, else trace_id_var, else None."""
+    """Return active OTel trace ID when valid, else trace_id_var, else None."""
     span = otel_trace.get_current_span()
     ctx = span.get_span_context()
     if ctx.is_valid:

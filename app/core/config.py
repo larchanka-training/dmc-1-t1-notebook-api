@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     otel_enabled: bool = False
     otel_endpoint: str = "http://localhost:4317"
     otel_service_name: str = "dmc-1-t1-notebook-api"
+    otel_logs_enabled: bool = True
 
     # Logging settings
     log_level: str = "DEBUG"

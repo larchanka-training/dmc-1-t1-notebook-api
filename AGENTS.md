@@ -46,6 +46,36 @@ pytest                          # Запуск всех тестов
 
 Пошаговые гайды в папке `.agents/`:
 - [`add-endpoint.md`](.agents/add-endpoint.md) — добавить новый FastAPI endpoint
+- [`add-model.md`](.agents/add-model.md) — добавить SQLAlchemy модель + Alembic миграцию
+
+## User Context (Placeholder Auth)
+
+До реализации полноценной авторизации все API endpoints получают `user_id`
+через HTTP-заголовок `X-User-ID`.
+
+**Паттерн для FastAPI endpoint:**
+
+```python
+from fastapi import APIRouter, Header
+
+router = APIRouter()
+
+@router.get("/")
+async def list_items(x_user_id: str = Header(...)):
+    # x_user_id — идентификатор текущего пользователя (UUID)
+    ...
+```
+
+UI передаёт заголовок в каждом запросе. При отсутствии заголовка FastAPI
+автоматически возвращает 422 Unprocessable Entity.
+
+## Как использовать Task Skills с AI-инструментами
+
+| Инструмент | Как вызвать skill |
+|-----------|------------------|
+| **Claude Code** | `/add-endpoint` или скажи: *"follow .agents/add-endpoint.md"* |
+| **Gemini CLI** | *"follow .agents/add-endpoint.md step by step"* |
+| **Codex (OpenAI)** | *"use the instructions in .agents/add-endpoint.md"* |
 
 ## Agent Workflow
 

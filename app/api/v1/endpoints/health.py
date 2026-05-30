@@ -16,7 +16,6 @@ def healthcheck() -> dict[str, str]:
 
     Returns service status, name, environment, and API version.
     """
-    logger.info("Health check requested")
     return {
         "status": "healthy",
         "service": settings.app_name,
@@ -38,7 +37,6 @@ def healthcheck_db() -> dict[str, str]:
     try:
         conn = psycopg2.connect(settings.database_url, connect_timeout=5)
         conn.close()
-        logger.info("Database health check passed")
         return {"status": "healthy", "detail": "database connection successful"}
     except Exception as e:
         logger.error("Database health check failed: %s", e)

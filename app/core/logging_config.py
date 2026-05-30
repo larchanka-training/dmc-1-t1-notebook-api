@@ -16,6 +16,13 @@ from app.utils.tracing import get_trace_id, get_user_id
 
 SERVICE_NAME = "dmc-1-t1-notebook-api"
 
+class HealthCheckFilter(logging.Filter):
+    """Drops uvicorn access log records for health check requests."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/health" not in record.getMessage()
+
+
 _RESERVED_LOGRECORD_ATTRS = {
     "args", "asctime", "created", "exc_info", "exc_text", "filename",
     "funcName", "levelname", "levelno", "lineno", "message", "module",
@@ -132,3 +139,7 @@ def setup_logging(console_output: bool = True) -> None:
         },
     }
     logging.config.dictConfig(config)
+
+    health_filter = HealthCheckFilter()
+    for name in ("uvicorn.access", "uvicorn"):
+        logging.getLogger(name).addFilter(health_filter)

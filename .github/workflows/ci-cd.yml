@@ -109,6 +109,37 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  deploy-dev:
+    name: Deploy to Dev (ECS)
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Deploy API to Dev ECS
+        run: |
+          IMAGE="ghcr.io/larchanka-training/dmc-1-t1-notebook-api:sha-${{ github.sha }}"
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition dmc-1-t1-notebook-dev-api \
+            --query taskDefinition)
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$IMAGE" \
+            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)')
+          NEW_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)
+          aws ecs update-service \
+            --cluster dmc-1-t1-notebook-dev \
+            --service dmc-1-t1-notebook-dev-api \
+            --task-definition "$NEW_ARN"
+
   notify-mono:
     name: Notify Mono to Update Submodules
     runs-on: ubuntu-latest

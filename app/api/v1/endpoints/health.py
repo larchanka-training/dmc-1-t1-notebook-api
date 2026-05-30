@@ -1,6 +1,7 @@
 import logging
 
-from fastapi import APIRouter
+import psycopg2
+from fastapi import APIRouter, HTTPException
 
 from app.core.config import settings
 
@@ -22,3 +23,23 @@ def healthcheck() -> dict[str, str]:
         "environment": settings.app_env,
         "api_version": "v1",
     }
+
+
+@router.get("/health/db")
+def healthcheck_db() -> dict[str, str]:
+    """Database connectivity health check.
+
+    Attempts a real connection to verify the database is reachable.
+    Returns 503 if the database is unavailable.
+    """
+    if not settings.database_url:
+        return {"status": "not_configured", "detail": "DATABASE_URL is not set"}
+
+    try:
+        conn = psycopg2.connect(settings.database_url, connect_timeout=5)
+        conn.close()
+        logger.info("Database health check passed")
+        return {"status": "healthy", "detail": "database connection successful"}
+    except Exception as e:
+        logger.error("Database health check failed: %s", e)
+        raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")

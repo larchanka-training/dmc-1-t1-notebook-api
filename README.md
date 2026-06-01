@@ -5,32 +5,52 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 ## What is included
 
 - FastAPI app with versioned API routing
+- JWT-based authentication via HttpOnly cookies (register, login, logout, refresh, me)
+- Async SQLAlchemy ORM with PostgreSQL (asyncpg)
+- Alembic migrations
 - Health check endpoint with detailed service information
 - Structured JSON logging system with trace context
 - Environment-based configuration with Pydantic Settings
-- Basic test setup with Pytest
+- Test setup with Pytest (unit + mocked-DB integration tests)
 - Clear folder structure for future growth
 
 ## Project structure
 
 ```text
 .
+├── alembic/
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
+│       └── 0001_create_users_and_sessions.py
 ├── app
 │   ├── api
 │   │   └── v1
 │   │       ├── endpoints
+│   │       │   ├── auth.py
 │   │       │   └── health.py
 │   │       └── router.py
 │   ├── core
 │   │   ├── config.py
-│   │   └── logging_config.py
+│   │   ├── logging_config.py
+│   │   └── security.py
+│   ├── db
+│   │   ├── base.py
+│   │   ├── models
+│   │   │   ├── session.py
+│   │   │   └── user.py
+│   │   └── session.py
+│   ├── schemas
+│   │   └── auth.py
 │   ├── utils
 │   │   └── tracing.py
 │   └── main.py
 ├── logs
 │   └── app.log
 ├── tests
+│   ├── test_auth.py
 │   └── test_health.py
+├── alembic.ini
 ├── .env.example
 ├── pyproject.toml
 └── requirements-dev.txt
@@ -78,8 +98,9 @@ pytest
 
 - Add new endpoints in `app/api/v1/endpoints/`
 - Include endpoint routers inside `app/api/v1/router.py`
+- Add new ORM models in `app/db/models/` and register them in `app/db/models/__init__.py`
+- Generate a migration after model changes: `alembic revision --autogenerate -m "describe the change"`
 - Add business logic/services in new modules (for example: `app/services/`)
-- Add database layer later (`app/db/`) when needed
 
 ## Logging
 

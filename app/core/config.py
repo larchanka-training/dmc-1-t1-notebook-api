@@ -15,9 +15,12 @@ class Settings(BaseSettings):
     oauth_client_id: str = ""
     oauth_client_secret: str = ""
 
-    # Token settings
-    token_ttl_seconds: int = 86400
-    session_ttl_seconds: int = 604800
+    # JWT / Auth settings
+    jwt_secret: str = "dev-jwt-secret-replace-in-production"
+    jwt_algorithm: str = "HS256"
+    access_token_ttl_seconds: int = 900      # 15 minutes
+    session_ttl_seconds: int = 604800        # 7 days (refresh token)
+    cookie_domain: str = ".notebook.com"
 
     # OpenTelemetry settings
     otel_enabled: bool = False
@@ -32,6 +35,10 @@ class Settings(BaseSettings):
     log_file: Path = Path("logs/app.log")
     log_retention_days: int = 14
     enable_file_logging: bool = True
+
+    @property
+    def async_database_url(self) -> str:
+        return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
     model_config = SettingsConfigDict(
         env_file=".env",

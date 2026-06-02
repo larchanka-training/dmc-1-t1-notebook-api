@@ -26,3 +26,6 @@ class User(Base):
     sessions: Mapped[list["Session"]] = relationship(  # noqa: F821
         "Session", back_populates="user", cascade="all, delete-orphan"
     )
+    notebooks: Mapped[list["Notebook"]] = relationship(  # noqa: F821
+        "Notebook", back_populates="user", cascade="all, delete-orphan"
+    )

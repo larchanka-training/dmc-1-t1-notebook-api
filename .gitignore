@@ -4,3 +4,12 @@ __pycache__/
 .env
 *.pyc
 logs/
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+.claude/
+*.iml
+*.swp
+*.swo

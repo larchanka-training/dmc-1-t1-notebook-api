@@ -9,6 +9,7 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 - Async SQLAlchemy ORM with PostgreSQL (asyncpg)
 - Alembic migrations
 - Health check endpoint with detailed service information
+- AI output validation & repair pipeline (extract code, JS syntax check, retry)
 - Structured JSON logging system with trace context
 - Environment-based configuration with Pydantic Settings
 - Test setup with Pytest (unit + mocked-DB integration tests)
@@ -24,11 +25,16 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 │   └── versions/
 │       └── 0001_create_users_and_sessions.py
 ├── app
+│   ├── ai
+│   │   ├── exceptions.py
+│   │   └── validation.py
 │   ├── api
 │   │   └── v1
 │   │       ├── endpoints
+│   │       │   ├── ai.py
 │   │       │   ├── auth.py
-│   │       │   └── health.py
+│   │       │   ├── health.py
+│   │       │   └── notebooks.py
 │   │       └── router.py
 │   ├── core
 │   │   ├── config.py
@@ -48,8 +54,11 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 ├── logs
 │   └── app.log
 ├── tests
+│   ├── test_ai_endpoint.py
+│   ├── test_ai_validation.py
 │   ├── test_auth.py
-│   └── test_health.py
+│   ├── test_health.py
+│   └── test_notebooks.py
 ├── alembic.ini
 ├── .env.example
 ├── pyproject.toml
@@ -147,4 +156,34 @@ The health check endpoint is available at `/api/v1/health` and returns:
 ```
 
 This endpoint can be used by load balancers, orchestrators, or monitoring systems to verify service availability.
+
+## AI Output Validation
+
+`POST /api/v1/ai/validate` validates a raw LLM response before it is shown in a
+Code Cell: it extracts executable JavaScript from arbitrary model output
+(markdown fences, prose, no fences) and checks its syntax.
+
+Request:
+
+```json
+{ "raw": "Sure!\n```js\nconst x = 1;\nconsole.log(x);\n```" }
+```
+
+Response:
+
+```json
+{
+  "isValid": true,
+  "code": "const x = 1;\nconsole.log(x);",
+  "language": "javascript",
+  "reason": "ok",
+  "issues": [],
+  "validator": "esprima"
+}
+```
+
+Syntax checking uses [`esprima`](https://pypi.org/project/esprima/) (pure-Python,
+ES2017) with a dependency-free structural fallback. The repair loop
+(`app.ai.generate_validated_code`) re-prompts the LLM with the error text on
+invalid output. See `docs/architecture/ai-output-validation.md`.
 

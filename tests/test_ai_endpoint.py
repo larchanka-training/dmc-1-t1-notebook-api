@@ -54,3 +54,58 @@ def test_validate_endpoint_syntax_error() -> None:
 def test_validate_endpoint_requires_raw_field() -> None:
     resp = client.post("/api/v1/ai/validate", json={})
     assert resp.status_code == 422
+
+
+def test_context_endpoint_builds_prompt() -> None:
+    resp = client.post(
+        "/api/v1/ai/context",
+        json={
+            "cells": [
+                {"id": "m1", "type": "markdown", "source": "# Setup"},
+                {
+                    "id": "c1",
+                    "type": "code",
+                    "source": "const x = 1;",
+                    "output": {"type": "execute_result", "text": "1"},
+                },
+                {"id": "prompt", "type": "code", "source": "// task"},
+            ],
+            "targetCellId": "prompt",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["totalCells"] == 3
+    assert data["includedCells"] == 2
+    assert data["truncated"] is False
+    assert "# Setup" in data["prompt"]
+    assert "const x = 1;" in data["prompt"]
+    assert "Output:" in data["prompt"]
+    assert [c["id"] for c in data["cells"]] == ["m1", "c1"]
+
+
+def test_context_endpoint_empty_cells() -> None:
+    resp = client.post("/api/v1/ai/context", json={"cells": []})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["includedCells"] == 0
+    assert data["prompt"] == ""
+
+
+def test_context_endpoint_exclude_outputs() -> None:
+    resp = client.post(
+        "/api/v1/ai/context",
+        json={
+            "cells": [
+                {
+                    "id": "c1",
+                    "type": "code",
+                    "source": "x",
+                    "output": {"type": "execute_result", "text": "1"},
+                }
+            ],
+            "includeOutputs": False,
+        },
+    )
+    assert resp.status_code == 200
+    assert "Output:" not in resp.json()["prompt"]

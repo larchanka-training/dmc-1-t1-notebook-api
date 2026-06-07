@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     otel_service_name: str = "dmc-1-t1-notebook-api"
     otel_logs_enabled: bool = True
 
+    # Bedrock settings
+    bedrock_model_id: str = "amazon.nova-lite-v1:0"
+    bedrock_region: str = "eu-north-1"
+
+    # AI rate limiting (per user, in-memory sliding window)
+    ai_rate_limit_rpm: int = 10    # requests per minute
+    ai_rate_limit_rpd: int = 100   # requests per day
+    ai_max_prompt_chars: int = 32_000  # ~8K tokens; guards against oversized payloads
+
     # Logging settings
     log_level: str = "DEBUG"
     log_level_console: str = "DEBUG"

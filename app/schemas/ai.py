@@ -61,6 +61,31 @@ class ContextResponse(BaseModel):
         )
 
 
+class GenerateRequest(BaseModel):
+    """Запрос на генерацию JS-кода через Bedrock."""
+
+    prompt: str = Field(
+        ...,
+        description="Formatted prompt. Use POST /ai/context to build it from notebook cells.",
+    )
+
+
+class GenerateResponse(BaseModel):
+    code: str
+    language: str
+    isValid: bool
+    attempts: int
+
+    @classmethod
+    def from_result(cls, result: ValidationResult) -> "GenerateResponse":
+        return cls(
+            code=result.code,
+            language=result.language,
+            isValid=result.is_valid,
+            attempts=result.attempt,
+        )
+
+
 class ValidateRequest(BaseModel):
     """Запрос на валидацию сырого ответа LLM перед выводом в Code Cell."""
 

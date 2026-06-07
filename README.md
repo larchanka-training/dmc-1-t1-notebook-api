@@ -23,15 +23,18 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions/
-│       └── 0001_create_users_and_sessions.py
 ├── app
 │   ├── ai
-│   │   ├── exceptions.py
-│   │   └── validation.py
+│   │   ├── bedrock.py       # AWS Bedrock client (Converse API)
+│   │   ├── context.py       # Notebook context builder for LLM prompts
+│   │   ├── exceptions.py    # AI layer exception hierarchy
+│   │   ├── prompt_guard.py  # Prompt injection detection
+│   │   ├── rate_limit.py    # Per-user sliding-window rate limiter
+│   │   └── validation.py    # LLM output extraction + JS syntax validation
 │   ├── api
 │   │   └── v1
 │   │       ├── endpoints
-│   │       │   ├── ai.py
+│   │       │   ├── ai.py        # /ai/generate, /ai/context, /ai/validate
 │   │       │   ├── auth.py
 │   │       │   ├── health.py
 │   │       │   └── notebooks.py
@@ -47,18 +50,12 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 │   │   │   └── user.py
 │   │   └── session.py
 │   ├── schemas
+│   │   ├── ai.py
 │   │   └── auth.py
 │   ├── utils
 │   │   └── tracing.py
 │   └── main.py
-├── logs
-│   └── app.log
-├── tests
-│   ├── test_ai_endpoint.py
-│   ├── test_ai_validation.py
-│   ├── test_auth.py
-│   ├── test_health.py
-│   └── test_notebooks.py
+├── tests/
 ├── alembic.ini
 ├── .env.example
 ├── pyproject.toml
@@ -156,6 +153,55 @@ The health check endpoint is available at `/api/v1/health` and returns:
 ```
 
 This endpoint can be used by load balancers, orchestrators, or monitoring systems to verify service availability.
+
+## AI Code Generation
+
+`POST /api/v1/ai/generate` — generates JavaScript code from a prompt via AWS Bedrock. Requires authentication.
+
+**Full flow:** build a prompt with `/ai/context` → send it to `/ai/generate` → receive validated, executable JS.
+
+Request:
+
+```json
+{ "prompt": "<text from POST /ai/context>" }
+```
+
+Response:
+
+```json
+{
+  "code": "const x = [1, 2, 3].map(n => n * 2);\nconsole.log(x);",
+  "language": "javascript",
+  "isValid": true,
+  "attempts": 1
+}
+```
+
+**Safeguards:**
+
+| Check | Limit | HTTP |
+|-------|-------|------|
+| Auth | JWT required | 401 |
+| Prompt size | `AI_MAX_PROMPT_CHARS` (default 32 000) | 400 |
+| Injection patterns | 10 common patterns detected | 400 |
+| Rate limit (per user) | `AI_RATE_LIMIT_RPM` / `AI_RATE_LIMIT_RPD` | 429 |
+| Syntax repair | up to 3 attempts, error fed back to model | 422 if all fail |
+
+See [`docs/architecture/ai-generation.md`](../docs/architecture/ai-generation.md) for full detail.
+
+**Bedrock configuration** (env vars):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BEDROCK_MODEL_ID` | `amazon.nova-lite-v1:0` | Foundation model to use |
+| `BEDROCK_REGION` | `eu-north-1` | AWS region for Bedrock calls |
+| `AI_RATE_LIMIT_RPM` | `10` | Max requests per minute per user |
+| `AI_RATE_LIMIT_RPD` | `100` | Max requests per day per user |
+| `AI_MAX_PROMPT_CHARS` | `32000` | Max prompt length in characters |
+
+In ECS, credentials come from the task IAM role automatically. Locally, configure `~/.aws/credentials` or set `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`.
+
+---
 
 ## AI Output Validation
 

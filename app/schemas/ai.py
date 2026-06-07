@@ -66,7 +66,9 @@ class GenerateRequest(BaseModel):
 
     prompt: str = Field(
         ...,
-        description="Formatted prompt. Use POST /ai/context to build it from notebook cells.",
+        description=(
+            "Formatted prompt. Use POST /ai/context to build it from notebook cells."
+        ),
     )
 
 

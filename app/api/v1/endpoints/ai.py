@@ -9,9 +9,13 @@ from app.ai.context import build_context
 from app.ai.exceptions import AIRepairFailed
 from app.ai.prompt_guard import check_prompt
 from app.ai.rate_limit import ai_rate_limiter
-from app.core.config import settings
-from app.ai.validation import ValidationResult, generate_validated_code, validate_ai_output
+from app.ai.validation import (
+    ValidationResult,
+    generate_validated_code,
+    validate_ai_output,
+)
 from app.api.v1.endpoints.auth import get_current_user
+from app.core.config import settings
 from app.db.models.user import User
 from app.schemas.ai import (
     ContextRequest,
@@ -86,7 +90,10 @@ async def generate_code(
     except ClientError as exc:
         code = exc.response["Error"]["Code"]
         if code == "ThrottlingException":
-            raise HTTPException(status_code=429, detail="Bedrock throttled — retry shortly")
+            raise HTTPException(
+                status_code=429,
+                detail="Bedrock throttled — retry shortly",
+            )
         raise HTTPException(status_code=503, detail=f"Bedrock error: {code}")
 
     logger.info(

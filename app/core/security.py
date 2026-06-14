@@ -62,9 +62,9 @@ def clear_auth_cookies(response: Response) -> None:
         response.delete_cookie(
             key=name,
             httponly=True,
-            secure=True,
+            secure=settings.secure_cookies,
             samesite="lax",
-            domain=settings.cookie_domain,
+            domain=settings.cookie_domain or None,
         )
 
 
@@ -73,8 +73,8 @@ def _set_cookie(response: Response, name: str, value: str, max_age: int) -> None
         key=name,
         value=value,
         httponly=True,
-        secure=True,
+        secure=settings.secure_cookies,
         samesite="lax",
-        domain=settings.cookie_domain,
+        domain=settings.cookie_domain or None,
         max_age=max_age,
     )

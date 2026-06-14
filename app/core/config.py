@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_ttl_seconds: int = 900      # 15 minutes
     session_ttl_seconds: int = 604800        # 7 days (refresh token)
-    cookie_domain: str = ".notebook.com"
+    cookie_domain: str = ""
+    secure_cookies: bool = False
 
     # OpenTelemetry settings
     otel_enabled: bool = False

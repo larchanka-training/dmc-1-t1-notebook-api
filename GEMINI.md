@@ -1,1 +1,1 @@
-Смотри AGENTS.md
+AGENTS.md

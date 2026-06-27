@@ -13,3 +13,10 @@ logs/
 *.iml
 *.swp
 *.swo
+
+# Build artifacts
+*.egg-info/
+
+# Graphify / Graphweave
+graphify-out/
+.graphweave/

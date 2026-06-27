@@ -1,0 +1,38 @@
+# Python
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.venv
+**/venv
+
+# Environment and secrets
+**/.env
+**/.env.*
+
+# Logs
+**/*.log
+**/logs
+
+# Egg-info / build artifacts
+**/*.egg-info
+
+# Code-only graph: документы требуют LLM для семантической экстракции.
+# Исключаем, чтобы `graphify update` работал без API-ключа.
+**/*.md
+**/*.mdx
+**/*.txt
+**/*.rst
+**/*.html
+**/*.yaml
+**/*.yml
+**/*.pdf
+**/*.docx
+**/*.xlsx
+
+# OS / Editor
+**/.idea
+**/.vscode
+**/.claude
+**/.DS_Store

@@ -1,23 +1,23 @@
-# FastAPI Template (MSD Course)
+# Notebook API — FastAPI Backend
 
-A simple, extensible FastAPI starter template for students in the Modern Software Development course.
+FastAPI backend для JavaScript Notebook платформы. Предоставляет REST API для работы с notebook'ами, управления пользователями, AI-генерации кода и сбора аналитики.
 
-## What is included
+## Возможности
 
-- FastAPI app with versioned API routing
-- JWT-based authentication via HttpOnly cookies (register, login, logout, refresh, me)
-- Async SQLAlchemy ORM with PostgreSQL (asyncpg)
-- Alembic migrations
-- Health check endpoint with detailed service information
-- AI output validation & repair pipeline (extract code, JS syntax check, retry)
-- Structured JSON logging system with trace context
-- Environment-based configuration with Pydantic Settings
-- Test setup with Pytest (unit + mocked-DB integration tests)
-- Clear folder structure for future growth
+- Versioned API routing (`/api/v1`)
+- JWT-авторизация через HttpOnly cookies (register, login, logout, refresh, me)
+- Async SQLAlchemy ORM с PostgreSQL (asyncpg)
+- Alembic миграции
+- Health check endpoint с детальной информацией
+- AI генерация кода через AWS Bedrock с валидацией и ремонтом вывода
+- Usage Analytics — трекинг событий и dashboard
+- Структурированное JSON-логирование с trace context
+- Конфигурация через Pydantic Settings
+- Тесты на Pytest (unit + mocked-DB integration)
 
-## Project structure
+## Структура проекта
 
-```text
+```
 .
 ├── alembic/
 │   ├── env.py
@@ -26,32 +26,38 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 ├── app
 │   ├── ai
 │   │   ├── bedrock.py       # AWS Bedrock client (Converse API)
-│   │   ├── context.py       # Notebook context builder for LLM prompts
-│   │   ├── exceptions.py    # AI layer exception hierarchy
-│   │   ├── prompt_guard.py  # Prompt injection detection
-│   │   ├── rate_limit.py    # Per-user sliding-window rate limiter
-│   │   └── validation.py    # LLM output extraction + JS syntax validation
+│   │   ├── context.py       # Сборка контекста notebook для LLM
+│   │   ├── exceptions.py    # Иерархия исключений AI слоя
+│   │   ├── prompt_guard.py  # Детекция prompt injection
+│   │   ├── rate_limit.py    # Rate limiter per user (sliding window)
+│   │   └── validation.py    # Извлечение кода + JS syntax validation
 │   ├── api
 │   │   └── v1
 │   │       ├── endpoints
-│   │       │   ├── ai.py        # /ai/generate, /ai/context, /ai/validate
-│   │       │   ├── auth.py
-│   │       │   ├── health.py
-│   │       │   └── notebooks.py
+│   │       │   ├── ai.py         # /ai/generate, /ai/context, /ai/validate
+│   │       │   ├── analytics.py  # /analytics/events, /analytics/dashboard
+│   │       │   ├── auth.py       # /auth/register, /auth/login, /auth/refresh, ...
+│   │       │   ├── health.py     # /health
+│   │       │   └── notebooks.py  # CRUD notebooks
 │   │       └── router.py
 │   ├── core
-│   │   ├── config.py
-│   │   ├── logging_config.py
-│   │   └── security.py
+│   │   ├── config.py        # Настройки через pydantic-settings
+│   │   ├── logging_config.py # JSON логирование с trace context
+│   │   ├── security.py      # JWT, password hashing
+│   │   └── telemetry.py     # OpenTelemetry
 │   ├── db
 │   │   ├── base.py
 │   │   ├── models
-│   │   │   ├── session.py
-│   │   │   └── user.py
+│   │   │   ├── analytics.py    # AnalyticsEvent
+│   │   │   ├── notebook.py     # Notebook
+│   │   │   ├── session.py      # Session
+│   │   │   └── user.py         # User
 │   │   └── session.py
 │   ├── schemas
 │   │   ├── ai.py
-│   │   └── auth.py
+│   │   ├── analytics.py
+│   │   ├── auth.py
+│   │   └── notebook.py
 │   ├── utils
 │   │   └── tracing.py
 │   └── main.py
@@ -62,62 +68,71 @@ A simple, extensible FastAPI starter template for students in the Modern Softwar
 └── requirements-dev.txt
 ```
 
-## Quick start
+## Быстрый старт
 
-1. Create and activate virtual environment:
+1. Создать виртуальное окружение:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-2. Install dependencies:
+2. Установить зависимости:
 
 ```bash
 pip install -r requirements-dev.txt
 ```
 
-3. Copy env file:
+3. Скопировать env-файл:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Run app:
+4. Запустить приложение:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API docs will be available at:
+API документация:
 
-- `http://127.0.0.1:8000/docs`
-- `http://127.0.0.1:8000/redoc`
+- `http://127.0.0.1:8000/docs` — Swagger UI
+- `http://127.0.0.1:8000/redoc` — ReDoc
 
-## Run tests
+## Команды
 
 ```bash
-pytest
+uvicorn app.main:app --reload   # Dev server на http://localhost:8000
+ruff check .                    # Линтинг (политика нулевых ошибок)
+pytest                          # Запуск всех тестов
+alembic upgrade head            # Применить миграции БД
+alembic revision --autogenerate -m "описание"  # Создать новую миграцию
 ```
 
-## How to extend
+## API
 
-- Add new endpoints in `app/api/v1/endpoints/`
-- Include endpoint routers inside `app/api/v1/router.py`
-- Add new ORM models in `app/db/models/` and register them in `app/db/models/__init__.py`
-- Generate a migration after model changes: `alembic revision --autogenerate -m "describe the change"`
-- Add business logic/services in new modules (for example: `app/services/`)
+Базовый путь: `/api/v1`
 
-## Logging
+| Endpoint                          | Методы                    | Описание                          |
+|-----------------------------------|---------------------------|-----------------------------------|
+| `/auth`                           | POST, GET, DELETE         | Регистрация, вход, logout, refresh |
+| `/notebooks`                      | GET, POST, PUT, DELETE    | CRUD notebooks                    |
+| `/ai/generate`                    | POST                      | Генерация JS кода через Bedrock   |
+| `/ai/context`                     | POST                      | Сборка контекста для LLM          |
+| `/ai/validate`                    | POST                      | Валидация вывода LLM              |
+| `/analytics/events`               | POST                      | Запись события аналитики          |
+| `/analytics/dashboard`            | GET                       | Dashboard со статистикой          |
+| `/health`                         | GET                       | Health check                      |
 
-The application uses structured JSON logging with trace context:
+## Логирование
 
-- **Log format**: JSON with fields `timestamp`, `level`, `service`, `name`, `message`, `trace_id`, `user_id`
-- **Log levels**: Configurable via environment variables (`LOG_LEVEL`, `LOG_LEVEL_CONSOLE`, `LOG_LEVEL_FILE`)
-- **Log rotation**: Daily rotation at midnight with ~14-day retention (~2 weeks)
-- **Trace context**: Each log entry includes a `trace_id` for request tracking
+Структурированное JSON-логирование с trace context:
 
-### Using the logger
+- **Формат:** JSON с полями `timestamp`, `level`, `service`, `name`, `message`, `trace_id`, `user_id`
+- **Уровни:** Настраиваются через env (`LOG_LEVEL`, `LOG_LEVEL_CONSOLE`, `LOG_LEVEL_FILE`)
+- **Ротация:** Ежедневно в полночь, ~14 дней хранения
+- **Trace context:** Каждая запись включает `trace_id` для трекинга запросов
 
 ```python
 import logging
@@ -128,9 +143,7 @@ logger.info("User action completed", extra={"user_id": 123})
 logger.error("Something went wrong", exc_info=True)
 ```
 
-### Configuration
-
-Add to your `.env` file:
+Конфигурация в `.env`:
 
 ```env
 LOG_LEVEL=DEBUG
@@ -139,97 +152,51 @@ LOG_LEVEL_FILE=INFO
 LOG_FILE=logs/app.log
 ```
 
-## Health Check
+## AI генерация кода
 
-The health check endpoint is available at `/api/v1/health` and returns:
+`POST /api/v1/ai/generate` — генерация JavaScript из prompt через AWS Bedrock. Требует авторизации.
 
-```json
-{
-  "status": "healthy",
-  "service": "MSD FastAPI Template",
-  "environment": "dev",
-  "api_version": "v1"
-}
-```
+**Полный флоу:** собрать prompt через `/ai/context` → отправить в `/ai/generate` → получить валидированный JS.
 
-This endpoint can be used by load balancers, orchestrators, or monitoring systems to verify service availability.
+| Проверка             | Лимит                                   | HTTP |
+|----------------------|-----------------------------------------|------|
+| Авторизация          | JWT required                            | 401  |
+| Размер prompt        | `AI_MAX_PROMPT_CHARS` (default 32 000)  | 400  |
+| Prompt injection     | 10 паттернов детекции                   | 400  |
+| Rate limit (per user)| `AI_RATE_LIMIT_RPM` / `AI_RATE_LIMIT_RPD` | 429 |
+| Ремонт синтаксиса    | до 3 попыток с обратной связью          | 422  |
 
-## AI Code Generation
+Конфигурация Bedrock (env vars):
 
-`POST /api/v1/ai/generate` — generates JavaScript code from a prompt via AWS Bedrock. Requires authentication.
+| Variable             | Default                  | Описание                    |
+|----------------------|--------------------------|-----------------------------|
+| `BEDROCK_MODEL_ID`   | `amazon.nova-lite-v1:0`  | Foundation model            |
+| `BEDROCK_REGION`     | `eu-north-1`             | AWS регион                  |
+| `AI_RATE_LIMIT_RPM`  | `10`                     | Max запросов в минуту       |
+| `AI_RATE_LIMIT_RPD`  | `100`                    | Max запросов в день         |
+| `AI_MAX_PROMPT_CHARS`| `32000`                  | Max длина prompt (символы)  |
 
-**Full flow:** build a prompt with `/ai/context` → send it to `/ai/generate` → receive validated, executable JS.
+В ECS credentials берутся из task IAM role. Локально — `~/.aws/credentials` или `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`.
 
-Request:
+См. [`docs/architecture/ai-generation.md`](../docs/architecture/ai-generation.md).
 
-```json
-{ "prompt": "<text from POST /ai/context>" }
-```
+## AI валидация вывода
 
-Response:
+`POST /api/v1/ai/validate` — валидация raw LLM response перед показом в Code Cell: извлекает JS из произвольного вывода (markdown fences, prose) и проверяет синтаксис.
 
-```json
-{
-  "code": "const x = [1, 2, 3].map(n => n * 2);\nconsole.log(x);",
-  "language": "javascript",
-  "isValid": true,
-  "attempts": 1
-}
-```
+Syntax checking: [`esprima`](https://pypi.org/project/esprima/) (pure-Python, ES2017) + structural fallback. Repair loop (`app.ai.generate_validated_code`) пере-промптит LLM с текстом ошибки.
 
-**Safeguards:**
+См. [`docs/architecture/ai-output-validation.md`](../docs/architecture/ai-output-validation.md).
 
-| Check | Limit | HTTP |
-|-------|-------|------|
-| Auth | JWT required | 401 |
-| Prompt size | `AI_MAX_PROMPT_CHARS` (default 32 000) | 400 |
-| Injection patterns | 10 common patterns detected | 400 |
-| Rate limit (per user) | `AI_RATE_LIMIT_RPM` / `AI_RATE_LIMIT_RPD` | 429 |
-| Syntax repair | up to 3 attempts, error fed back to model | 422 if all fail |
+## Usage Analytics
 
-See [`docs/architecture/ai-generation.md`](../docs/architecture/ai-generation.md) for full detail.
+- `POST /api/v1/analytics/events` — запись события (`notebook_created`, `cell_executed`, `ai_request`, `execution_error`)
+- `GET /api/v1/analytics/dashboard` — агрегированная статистика (total events, events by type, recent events)
 
-**Bedrock configuration** (env vars):
+## Как расширять
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BEDROCK_MODEL_ID` | `amazon.nova-lite-v1:0` | Foundation model to use |
-| `BEDROCK_REGION` | `eu-north-1` | AWS region for Bedrock calls |
-| `AI_RATE_LIMIT_RPM` | `10` | Max requests per minute per user |
-| `AI_RATE_LIMIT_RPD` | `100` | Max requests per day per user |
-| `AI_MAX_PROMPT_CHARS` | `32000` | Max prompt length in characters |
-
-In ECS, credentials come from the task IAM role automatically. Locally, configure `~/.aws/credentials` or set `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`.
-
----
-
-## AI Output Validation
-
-`POST /api/v1/ai/validate` validates a raw LLM response before it is shown in a
-Code Cell: it extracts executable JavaScript from arbitrary model output
-(markdown fences, prose, no fences) and checks its syntax.
-
-Request:
-
-```json
-{ "raw": "Sure!\n```js\nconst x = 1;\nconsole.log(x);\n```" }
-```
-
-Response:
-
-```json
-{
-  "isValid": true,
-  "code": "const x = 1;\nconsole.log(x);",
-  "language": "javascript",
-  "reason": "ok",
-  "issues": [],
-  "validator": "esprima"
-}
-```
-
-Syntax checking uses [`esprima`](https://pypi.org/project/esprima/) (pure-Python,
-ES2017) with a dependency-free structural fallback. The repair loop
-(`app.ai.generate_validated_code`) re-prompts the LLM with the error text on
-invalid output. See `docs/architecture/ai-output-validation.md`.
+- Новые endpoints в `app/api/v1/endpoints/`, подключить в `app/api/v1/router.py`
+- Новые ORM модели в `app/db/models/`, зарегистрировать в `app/db/models/__init__.py`
+- Миграция: `alembic revision --autogenerate -m "описание изменения"`
+- Бизнес-логика в новых модулях (например: `app/services/`)
 
